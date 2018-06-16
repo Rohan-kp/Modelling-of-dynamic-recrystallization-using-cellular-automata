@@ -38,7 +38,7 @@ rho_not = (start_stress/0.5/b/G)^2;
 m = 600;
 n = 120;
 rng('shuffle')
-initial_nuclei = randi([1 m], n, 2);                 %nuclei at random posn
+initial_nuclei = randi([1 m], n, 2);                 %nuclei at random posn needed for crystallization
 euler_angles = zeros(m, m, 3);                       %stores RGB values
 colors = rand(n, 3);                                 %supplies RGB values
 orientation_matrix = zeros(m, m);                    %orientation of each grain
@@ -47,18 +47,19 @@ status = zeros(m , m);                               %crystallized or not
 label = zeros(m, m);
 neighbor_store = zeros(n,15);
 
+%initial pixels which will give birth to grains
 for i = 1:n
     euler_angles(initial_nuclei(i, 1), initial_nuclei(i, 2), :) = colors(i, :);
     orientation_matrix(initial_nuclei(i, 1), initial_nuclei(i, 2)) = orient(i,1);
-    label(initial_nuclei(i,1), initial_nuclei(i,2)) = i;                   %these are colored and hence will not be again colored in the next block's loop
+    label(initial_nuclei(i,1), initial_nuclei(i,2)) = i;                           %these are colored and hence will not be again colored in the next block's loop
 end
 %imshow(euler_angles, 'initialmagnification', 'fit');
 
 %mapping of nuclei with color
 mapping_matrix = [initial_nuclei,colors];
 
+%circular growth of the nuclei
 w = 1;
-
 while (nnz(euler_angles(:, :, 1)) ~= m*m)
     r = w;
     for x = -r:r
@@ -106,7 +107,7 @@ for i1 = 2:m-1
             if nnz(neighbor_store(z, :)) == 0                             %first time filling for that label
                 neighbor_store(z, 1:length(distinct_neighbors))...
                     = distinct_neighbors(:, :);
-            else                                                          %if not, check out for no repeat filling in store
+            else                                                          %if not, check out for no repeat filling in store_neighbor
                 for i2 = 1:length(distinct_neighbors)
                     if ismember(distinct_neighbors(1, i2), neighbor_store(z, :))
                     else
@@ -121,15 +122,13 @@ for i1 = 2:m-1
 end
 toc;
 
-%{
 %% Recovery modelling
-
 max_strain = 0.65;
 strain = 0.02;
-time_step = (max_strain / strain_rate)/ 100;
+time_step = (max_strain / strain_rate)/ 100;   
 del_strain = strain_rate* time_step;
 
-dislocation_density_matrix(1:m, 1:m) = rho_not;
+dislocation_density_matrix(1:m, 1:m) = rho_not;                         %uniform dislocation density for the primary grains
 avg_dislocation_density = sum(sum(dislocation_density_matrix))/ (m* m);
 critical_dislocation_density = avg_dislocation_density + 1;
 t = 1;
@@ -145,7 +144,7 @@ while(avg_dislocation_density < critical_dislocation_density)
     avg_dislocation_density =...
         sum(sum(dislocation_density_matrix))/(m* m);
     
-    l = 20/ sqrt(avg_dislocation_density);
+    l = 20/ sqrt(avg_dislocation_density);                              %mean free path for the dislocation movement
     
     flow_stress = 0.5* G* b* sqrt(avg_dislocation_density);
     
@@ -167,6 +166,6 @@ while(avg_dislocation_density < critical_dislocation_density)
 end
 figure;
 plot(data(:,1), data(:,2), '-o');
-%}
+
 
 
